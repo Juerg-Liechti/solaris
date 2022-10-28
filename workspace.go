@@ -251,11 +251,11 @@ func (ws Workspace) getRemoteState() (RemoteState, error) {
 	rs := RemoteState{}
 
 	refs := map[string]*regexp.Regexp{
-		"terraform": regexp.MustCompile(`terraform\s*\{[^\{\}]*\{[^\{\}]*\}[^\{\}]*\}`),
-		"bucket":    regexp.MustCompile(`bucket\s*=\s*\"(?P<val>[a-zA-Z0-9_\-]*)\"`),
-		"key":       regexp.MustCompile(`key\s*=\s*\"(?P<val>[^\"]*)\"`),
-		"profile":   regexp.MustCompile(`profile\s*=\s*\"(?P<val>[a-zA-Z0-9_\-]*)\"`),
-		"region":    regexp.MustCompile(`region\s*=\s*\"(?P<val>[a-zA-Z0-9_\-]*)\"`),
+		"terraform":            regexp.MustCompile(`terraform\s*\{[^\{\}]*\{[^\{\}]*\}[^\{\}]*\}`),
+		"storage_account_name": regexp.MustCompile(`storage_account_name\s*=\s*\"(?P<val>[a-zA-Z0-9_\-]*)\"`),
+		"key":                  regexp.MustCompile(`key\s*=\s*\"(?P<val>[^\"]*)\"`),
+		"resource_group_name":  regexp.MustCompile(`resource_group_name\s*=\s*\"(?P<val>[a-zA-Z0-9_\-]*)\"`),
+		"container_name":       regexp.MustCompile(`container_name\s*=\s*\"(?P<val>[a-zA-Z0-9_\-]*)\"`),
 	}
 
 	for filename, file := range ws.Files {
@@ -266,11 +266,11 @@ func (ws Workspace) getRemoteState() (RemoteState, error) {
 			continue
 		}
 
-		var bucket, key, profile, region string
+		var storage_account_name, key, resource_group_name, container_name string
 
-		bucketMatches := refs["bucket"].FindAllSubmatch(terraformMatches[0], -1)
-		if len(bucketMatches) > 0 && len(bucketMatches[0]) > 1 {
-			bucket = string(bucketMatches[0][1])
+		storage_account_nameMatches := refs["storage_account_name"].FindAllSubmatch(terraformMatches[0], -1)
+		if len(storage_account_nameMatches) > 0 && len(storage_account_nameMatches[0]) > 1 {
+			storage_account_name = string(storage_account_nameMatches[0][1])
 		}
 
 		keyMatches := refs["key"].FindAllSubmatch(terraformMatches[0], -1)
@@ -278,23 +278,23 @@ func (ws Workspace) getRemoteState() (RemoteState, error) {
 			key = string(keyMatches[0][1])
 		}
 
-		profileMatches := refs["profile"].FindAllSubmatch(terraformMatches[0], -1)
-		if len(profileMatches) > 0 && len(profileMatches[0]) > 1 {
-			profile = string(profileMatches[0][1])
+		resource_group_nameMatches := refs["resource_group_name"].FindAllSubmatch(terraformMatches[0], -1)
+		if len(resource_group_nameMatches) > 0 && len(resource_group_nameMatches[0]) > 1 {
+			resource_group_name = string(resource_group_nameMatches[0][1])
 		}
 
-		regionMatches := refs["region"].FindAllSubmatch(terraformMatches[0], -1)
-		if len(regionMatches) > 0 && len(regionMatches[0]) > 1 {
-			region = string(regionMatches[0][1])
+		container_nameMatches := refs["container_name"].FindAllSubmatch(terraformMatches[0], -1)
+		if len(container_nameMatches) > 0 && len(container_nameMatches[0]) > 1 {
+			container_name = string(container_nameMatches[0][1])
 		}
 
-		if bucket != "" && region != "" && key != "" && profile != "" {
+		if storage_account_name != "" && container_name != "" && key != "" && resource_group_name != "" {
 			rs = RemoteState{
 				InFile:  filename,
-				Bucket:  bucket,
+				Bucket:  storage_account_name,
 				Key:     key,
-				Profile: profile,
-				Region:  region,
+				Profile: resource_group_name,
+				Region:  container_name,
 			}
 		}
 	}
@@ -306,11 +306,11 @@ func (ws Workspace) getTerraformDependencies() ([]RemoteState, error) {
 	d := []RemoteState{}
 
 	refs := map[string]*regexp.Regexp{
-		"rs":      regexp.MustCompile(`data\s*\"terraform_remote_state\"\s*\"(?P<val>[a-zA-Z0-9_-]*)\"\s*\{[^\{\}]*\{[^\{\}]*\}[^\{\}]*\}`),
-		"bucket":  regexp.MustCompile(`bucket\s*=\s*\"(?P<val>[a-zA-Z0-9_\-\./]*)\"`),
-		"key":     regexp.MustCompile(`key\s*=\s*\"(?P<val>[^\"]*)\"`),
-		"profile": regexp.MustCompile(`profile\s*=\s*\"(?P<val>[a-zA-Z0-9_\-]*)\"`),
-		"region":  regexp.MustCompile(`region\s*=\s*\"(?P<val>[a-zA-Z0-9_\-]*)\"`),
+		"rs":                   regexp.MustCompile(`data\s*\"terraform_remote_state\"\s*\"(?P<val>[a-zA-Z0-9_-]*)\"\s*\{[^\{\}]*\{[^\{\}]*\}[^\{\}]*\}`),
+		"storage_account_name": regexp.MustCompile(`storage_account_name\s*=\s*\"(?P<val>[a-zA-Z0-9_\-\./]*)\"`),
+		"key":                  regexp.MustCompile(`key\s*=\s*\"(?P<val>[^\"]*)\"`),
+		"resource_group_name":  regexp.MustCompile(`resource_group_name\s*=\s*\"(?P<val>[a-zA-Z0-9_\-]*)\"`),
+		"container_name":       regexp.MustCompile(`container_name\s*=\s*\"(?P<val>[a-zA-Z0-9_\-]*)\"`),
 	}
 
 	for filename, file := range ws.Files {
@@ -324,11 +324,11 @@ func (ws Workspace) getTerraformDependencies() ([]RemoteState, error) {
 				continue
 			}
 			name := string(definition[1])
-			var bucket, key, profile, region string
+			var storage_account_name, key, resource_group_name, container_name string
 
-			bucketMatches := refs["bucket"].FindAllSubmatch(definition[0], -1)
-			if len(bucketMatches) > 0 && len(bucketMatches[0]) > 1 {
-				bucket = string(bucketMatches[0][1])
+			storage_account_nameMatches := refs["storage_account_name"].FindAllSubmatch(definition[0], -1)
+			if len(storage_account_nameMatches) > 0 && len(storage_account_nameMatches[0]) > 1 {
+				storage_account_name = string(storage_account_nameMatches[0][1])
 			}
 
 			keyMatches := refs["key"].FindAllSubmatch(definition[0], -1)
@@ -336,26 +336,26 @@ func (ws Workspace) getTerraformDependencies() ([]RemoteState, error) {
 				key = string(keyMatches[0][1])
 			}
 
-			profileMatches := refs["profile"].FindAllSubmatch(definition[0], -1)
-			if len(profileMatches) > 0 && len(profileMatches[0]) > 1 {
-				profile = string(profileMatches[0][1])
+			resource_group_nameMatches := refs["resource_group_name"].FindAllSubmatch(definition[0], -1)
+			if len(resource_group_nameMatches) > 0 && len(resource_group_nameMatches[0]) > 1 {
+				resource_group_name = string(resource_group_nameMatches[0][1])
 			}
 
-			regionMatches := refs["region"].FindAllSubmatch(definition[0], -1)
-			if len(regionMatches) > 0 && len(regionMatches[0]) > 1 {
-				region = string(regionMatches[0][1])
+			container_nameMatches := refs["container_name"].FindAllSubmatch(definition[0], -1)
+			if len(container_nameMatches) > 0 && len(container_nameMatches[0]) > 1 {
+				container_name = string(container_nameMatches[0][1])
 			}
 
-			if bucket == "" || region == "" || key == "" || profile == "" {
+			if storage_account_name == "" || container_name == "" || key == "" || resource_group_name == "" {
 				continue
 			}
 			rs := RemoteState{
 				InFile:  filename,
 				Name:    name,
-				Bucket:  bucket,
+				Bucket:  storage_account_name,
 				Key:     key,
-				Profile: profile,
-				Region:  region,
+				Profile: resource_group_name,
+				Region:  container_name,
 			}
 			d = append(d, rs)
 		}
