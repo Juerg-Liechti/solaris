@@ -290,11 +290,11 @@ func (ws Workspace) getRemoteState() (RemoteState, error) {
 
 		if storage_account_name != "" && container_name != "" && key != "" && resource_group_name != "" {
 			rs = RemoteState{
-				InFile:  filename,
-				Bucket:  storage_account_name,
-				Key:     key,
-				Profile: resource_group_name,
-				Region:  container_name,
+				InFile:        filename,
+				Bucket:        storage_account_name,
+				Key:           key,
+				Profile:       resource_group_name,
+				Containername: container_name,
 			}
 		}
 	}
@@ -350,12 +350,12 @@ func (ws Workspace) getTerraformDependencies() ([]RemoteState, error) {
 				continue
 			}
 			rs := RemoteState{
-				InFile:  filename,
-				Name:    name,
-				Bucket:  storage_account_name,
-				Key:     key,
-				Profile: resource_group_name,
-				Region:  container_name,
+				InFile:        filename,
+				Name:          name,
+				Bucket:        storage_account_name,
+				Key:           key,
+				Profile:       resource_group_name,
+				Containername: container_name,
 			}
 			d = append(d, rs)
 		}
@@ -387,12 +387,12 @@ func (ws Workspace) getManualDependencies(workspaces map[string]*Workspace) ([]R
 				if strings.Contains(name, workspacePath) {
 
 					rs := RemoteState{
-						InFile:  filename,
-						Name:    workspacePath,
-						Bucket:  workspace.RemoteState.Bucket,
-						Key:     workspace.RemoteState.Key,
-						Profile: workspace.RemoteState.Profile,
-						Region:  workspace.RemoteState.Region,
+						InFile:        filename,
+						Name:          workspacePath,
+						Bucket:        workspace.RemoteState.Bucket,
+						Key:           workspace.RemoteState.Key,
+						Profile:       workspace.RemoteState.Profile,
+						Containername: workspace.RemoteState.Containername,
 					}
 
 					d = append(d, rs)
