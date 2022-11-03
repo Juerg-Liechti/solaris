@@ -19,7 +19,7 @@ Make sure you have [go](https://golang.org/doc/install) installed, then run:
 
 
 ```
-# go get -u https://github.com/unprofession-al/solaris
+# go get -u https://github.com/Juerg-Liechti/solaris
 ```
 
 ## How it works
