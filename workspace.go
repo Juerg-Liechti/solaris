@@ -188,7 +188,7 @@ func (ws Workspace) getTerraformInputs() ([]Input, error) {
 	inputs := []Input{}
 	refs := []*regexp.Regexp{
 		// pre v0.12.x syntax
-		regexp.MustCompile(`\${data\.terraform_remote_state\.(?P<rs>[a-zA-Z0-9_-]*)\.(?P<var>[a-zA-Z0-9_-]*)}`),
+		//regexp.MustCompile(`\${data\.terraform_remote_state\.(?P<rs>[a-zA-Z0-9_-]*)\.(?P<var>[a-zA-Z0-9_-]*)}`),
 		// post v0.12.x syntax
 		regexp.MustCompile(`data\.terraform_remote_state\.(?P<rs>[a-zA-Z0-9_-]*)\.outputs\.(?P<var>[a-zA-Z0-9_-]*)`),
 	}
@@ -252,10 +252,10 @@ func (ws Workspace) getRemoteState() (RemoteState, error) {
 
 	refs := map[string]*regexp.Regexp{
 		"terraform":            regexp.MustCompile(`terraform\s*\{[^\{\}]*\{[^\{\}]*\}[^\{\}]*\}`),
-		"storage_account_name": regexp.MustCompile(`storage_account_name\s*=\s*\"(?P<val>[a-zA-Z0-9_\-]*)\"`),
-		"key":                  regexp.MustCompile(`key\s*=\s*\"(?P<val>[^\"]*)\"`),
-		"resource_group_name":  regexp.MustCompile(`resource_group_name\s*=\s*\"(?P<val>[a-zA-Z0-9_\-]*)\"`),
-		"container_name":       regexp.MustCompile(`container_name\s*=\s*\"(?P<val>[a-zA-Z0-9_\-]*)\"`),
+		"storage_account_name": regexp.MustCompile(`storage_account_name\s*=\s*\"(?P<val>[a-zA-Z0-9_\-${}.]*)\"`),
+		"key":                  regexp.MustCompile(`key\s*=\s*\"(?P<val>[a-zA-Z0-9_\-${}.]*)\"`),
+		"resource_group_name":  regexp.MustCompile(`resource_group_name\s*=\s*\"(?P<val>[a-zA-Z0-9_\-${}.]*)\"`),
+		"container_name":       regexp.MustCompile(`container_name\s*=\s*\"(?P<val>[a-zA-Z0-9_\-${}.]*)\"`),
 	}
 
 	for filename, file := range ws.Files {
