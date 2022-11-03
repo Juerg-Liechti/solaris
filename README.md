@@ -3,13 +3,13 @@
 ![solaris](./solaris.png "solaris")
 
 `solaris` is a small command line tool which allows to keep track of dependencies
-between related [terraform](https://www.terraform.io) configurations.
+between related [terraform](https://www.terraform.io) configurations. This fork has some adaptions for azure.
 
 ## Install
 
 ### Binary Download
 
-Navigate to [Releases](https://github.com/unprofession-al/solaris/releases), grab
+Navigate to [Releases](https://github.com/Juerg-Liechti/solaris/releases), grab
 the package that matches your operating system and achitecture. Unpack the archive
 and put the binary file somewhere in your `$PATH`
 
@@ -53,6 +53,7 @@ Usage:
   solaris [command]
 
 Available Commands:
+  completion  generate the autocompletion script for the specified shell
   graph       generate dot output of terraform workspace dependencies
   help        Help about any command
   json        print a json representation of terraform workspace dependencies
@@ -71,6 +72,4 @@ Use "solaris [command] --help" for more information about a command.
 ## TODO
 
 - Create Data Sources via solaris: `solaris refer service/test` -> creates `terraform_remote_state` data source
-- Allow `terraform_remote_states` with backends other than s3
 - Add tests
-
