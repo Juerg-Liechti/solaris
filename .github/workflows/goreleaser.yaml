@@ -5,7 +5,7 @@ on:
       - 'v*.*.*'
 
 jobs:
-  releaser:
+  goreleaser:
     name: Release on GitHub
     runs-on: ubuntu-latest
     steps:
