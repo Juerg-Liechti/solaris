@@ -175,7 +175,7 @@ type Output struct {
 
 func (ws *Workspace) readFiles(basepath string) error {
 	for filename, file := range ws.Files {
-		raw, err := ioutil.ReadFile(basepath + filename)
+		raw, err := os.ReadFile(basepath + filename)
 		if err != nil {
 			return err
 		}

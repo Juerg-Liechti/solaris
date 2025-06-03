@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -209,7 +208,7 @@ func (a *App) planCmd(cmd *cobra.Command, args []string) {
 		if a.cfg.planTemplate == "" {
 			log.Fatal("template was not specified")
 		}
-		content, err := ioutil.ReadFile(a.cfg.planTemplate)
+		content, err := os.ReadFile(a.cfg.planTemplate)
 		if err != nil {
 			log.Fatal(err)
 		}
