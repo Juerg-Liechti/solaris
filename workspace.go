@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -482,7 +481,7 @@ func (ws Workspace) getManual(filename string) (Manual, error) {
 	m := Manual("")
 	path := ws.Root + "/" + filename
 	if _, err := os.Stat(path); err == nil {
-		raw, err := ioutil.ReadFile(path)
+		raw, err := os.ReadFile(path)
 		if err != nil {
 			return m, err
 		}
