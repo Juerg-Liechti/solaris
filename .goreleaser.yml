@@ -1,17 +1,13 @@
 project_name: myproject
-release:
-  github:
-    owner: your-github-username
-    name: your-repo-name
 builds:
-  - os: linux
-    goamd64: amd64
-    main: ./cmd/myproject/main.go
-    binary: myproject
-archives:
-  - format: zip
-    files:
-      - myproject
+  - env: [CGO_ENABLED=0]
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
 checksum:
   name_template: 'checksums.txt'
 snapshot:
