@@ -8,6 +8,10 @@ builds:
     goarch:
       - amd64
       - arm64
+    ldflags:
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .Commit }}
+      - -X main.date={{ .Date }}  
 archives:
   - format: zip
     name_template: '{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
