@@ -10,7 +10,7 @@ builds:
       - arm64
 archives:
   - format: zip
-    name_template: '{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip'
+    name_template: '{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
 checksum:
   name_template: 'checksums.txt'
 changelog:
