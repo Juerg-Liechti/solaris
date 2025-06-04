@@ -1,4 +1,4 @@
-project_name: myproject
+project_name: solaris
 builds:
   - env: [CGO_ENABLED=0]
     goos:
@@ -8,10 +8,11 @@ builds:
     goarch:
       - amd64
       - arm64
+archives:
+  - format: zip
+    name_template: '{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.zip'
 checksum:
   name_template: 'checksums.txt'
-snapshot:
-  name_template: "{{ .Tag }}-next"
 changelog:
   sort: asc
   filters:
