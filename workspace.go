@@ -247,7 +247,7 @@ func (ws Workspace) getRemoteState() (RemoteState, error) {
 	rs := RemoteState{}
 
 	refs := map[string]*regexp.Regexp{
-		"terraform":            regexp.MustCompile(`terraform\s*\{([^{}]*(\{(?:[^{}]|(?R))*\}[^{}]*)*)\}`),
+		"terraform":            regexp.MustCompile(`terraform\s*\{([^{}]*\{[^{}]*\}[^{}]*)\}`),
 		"storage_account_name": regexp.MustCompile(`storage_account_name\s*=\s*\"(?P<val>[a-zA-Z0-9_\-${}.]*)\"`),
 		"key":                  regexp.MustCompile(`key\s*=\s*\"(?P<val>[a-zA-Z0-9_\-${}.]*)\"`),
 		"resource_group_name":  regexp.MustCompile(`resource_group_name\s*=\s*\"(?P<val>[a-zA-Z0-9_\-${}.]*)\"`),
