@@ -17,6 +17,14 @@ const (
 	postFileName = "PostManual.md"
 )
 
+// GetWorkspaces scans the given root directory recursively to discover workspaces,
+// ignoring paths that match any of the provided ignore patterns. It collects all files
+// with the specified extension (tfext) and organizes them into Workspace structs,
+// gathering additional metadata such as remote state, dependencies, inputs, outputs,
+// and manual configuration files for each workspace. The function also establishes
+// relationships between workspace inputs and outputs based on dependencies.
+// Returns a map of workspace paths to Workspace pointers, or an error if any occurs
+// during processing.
 func GetWorkspaces(root string, ignore []string) (map[string]*Workspace, error) {
 	workspaces := map[string]*Workspace{}
 
@@ -133,6 +141,22 @@ func GetWorkspaces(root string, ignore []string) (map[string]*Workspace, error) 
 	return workspaces, err
 }
 
+// Workspace represents a project workspace, encapsulating its files, root directory,
+// remote state, dependencies, input and output variables, and associated manual content.
+// It also maintains a reference to a graph element for internal use.
+//
+// Fields:
+//   - Files: A map of file paths to File objects within the workspace (not serialized to JSON).
+//   - Root: The root directory of the workspace.
+//   - RemoteState: The current remote state associated with the workspace.
+//   - Dependencies: A list of remote states that this workspace depends on.
+//   - Inputs: A list of input variables for the workspace.
+//   - Outputs: A list of output variables produced by the workspace.
+//   - PreManual: Manual content to be rendered before main processing.
+//   - PreManualRendered: The rendered output of the pre-manual content.
+//   - PostManual: Manual content to be rendered after main processing.
+//   - PostManualRendered: The rendered output of the post-manual content.
+//   - graphElement: An internal reference to a dot.Graph element (not exported).
 type Workspace struct {
 	Files              map[string]*File `json:"-"`
 	Root               string           `json:"root"`
@@ -153,6 +177,9 @@ type File struct {
 	Raw []byte
 }
 
+// Input represents an input entity within the workspace, containing metadata such as its name,
+// full name, and references to dependencies and outputs. It also tracks the files it is defined in,
+// its parent workspace, and its corresponding graph node for visualization or analysis purposes.
 type Input struct {
 	Name         string       `json:"name"`
 	FullName     string       `json:"full_name"`
@@ -163,6 +190,10 @@ type Input struct {
 	graphElement dot.Node
 }
 
+// Output represents the result of a computation or process within a workspace.
+// It contains metadata such as the output's name, the file it was generated from,
+// and references to related inputs and the workspace it belongs to.
+// Some fields are omitted from JSON serialization for internal use only.
 type Output struct {
 	Name         string      `json:"name"`
 	Value        interface{} `json:"-"`
@@ -172,6 +203,9 @@ type Output struct {
 	graphElement dot.Node
 }
 
+// readFiles reads the contents of each file in the Workspace's Files map from the specified basepath.
+// It updates the Raw field of each file with the file's contents.
+// Returns an error if any file cannot be read.
 func (ws *Workspace) readFiles(basepath string) error {
 	for filename, file := range ws.Files {
 		raw, err := os.ReadFile(basepath + filename)
@@ -183,6 +217,12 @@ func (ws *Workspace) readFiles(basepath string) error {
 	return nil
 }
 
+// getTerraformInputs scans all files in the Workspace for references to remote state outputs
+// using predefined regular expressions. It extracts the referenced remote state name and variable,
+// associates them with the corresponding Dependency if found, and returns a slice of Input structs
+// representing these references. Each Input includes the variable name, full reference string,
+// the files in which it appears, the associated Dependency, and a pointer to the Workspace.
+// Returns an error only if an unexpected issue occurs during processing.
 func (ws Workspace) getTerraformInputs() ([]Input, error) {
 	inputs := []Input{}
 	refs := []*regexp.Regexp{
@@ -243,11 +283,21 @@ func (ws Workspace) getTerraformInputs() ([]Input, error) {
 	return inputs, nil
 }
 
+// getRemoteState scans the files in the Workspace for a Terraform remote state backend configuration,
+// specifically looking for Azure backend parameters. It uses regular expressions to extract the values
+// of storage_account_name, key, resource_group_name, and container_name from the Terraform configuration
+// blocks. If all required parameters are found in a file, it constructs and returns a RemoteState struct
+// populated with these values. If multiple remote state definitions are found in a single file, it returns
+// an error. If no valid remote state configuration is found, it returns an empty RemoteState and nil error.
+//
+// Returns:
+//   - RemoteState: The extracted remote state configuration, if found.
+//   - error: An error if multiple remote state definitions are found in a file, otherwise nil.
 func (ws Workspace) getRemoteState() (RemoteState, error) {
 	rs := RemoteState{}
 
 	refs := map[string]*regexp.Regexp{
-		"terraform":            regexp.MustCompile(`terraform\s*\{[^\{\}]*\{[^\{\}]*\}[^\{\}]*\}`),
+		"terraform":            regexp.MustCompile(`terraform\s*\{(?:[^{}]*|\{(?:[^{}]*|\{[^{}]*\})*\})*\}`),
 		"storage_account_name": regexp.MustCompile(`storage_account_name\s*=\s*\"(?P<val>[a-zA-Z0-9_\-${}.]*)\"`),
 		"key":                  regexp.MustCompile(`key\s*=\s*\"(?P<val>[a-zA-Z0-9_\-${}.]*)\"`),
 		"resource_group_name":  regexp.MustCompile(`resource_group_name\s*=\s*\"(?P<val>[a-zA-Z0-9_\-${}.]*)\"`),
@@ -298,6 +348,14 @@ func (ws Workspace) getRemoteState() (RemoteState, error) {
 	return rs, nil
 }
 
+// getTerraformDependencies parses the files in the Workspace to extract Terraform remote state dependencies.
+// It searches for `terraform_remote_state` data blocks and extracts relevant backend configuration values such as
+// storage account name, key, resource group name, and container name. The function returns a slice of RemoteState
+// structs containing the extracted dependency information, or an error if any occurs during processing.
+//
+// Returns:
+//   - []RemoteState: A slice of RemoteState structs representing the discovered Terraform remote state dependencies.
+//   - error: An error if any issues are encountered during extraction, otherwise nil.
 func (ws Workspace) getTerraformDependencies() ([]RemoteState, error) {
 	d := []RemoteState{}
 
@@ -361,6 +419,18 @@ func (ws Workspace) getTerraformDependencies() ([]RemoteState, error) {
 	return d, nil
 }
 
+// getManualDependencies parses the PreManual and PostManual fields of the Workspace for references
+// to remote states in the form of {{workspace.key}}. It searches for these references using a regular
+// expression, extracts the workspace path, and matches it against the provided workspaces map.
+// For each match, it constructs a RemoteState object containing relevant information from the referenced
+// workspace and returns a slice of these RemoteState objects. If a reference is malformed, an error is returned.
+//
+// Parameters:
+//   - workspaces: a map of workspace names to Workspace pointers, used to resolve references.
+//
+// Returns:
+//   - A slice of RemoteState objects representing the manually referenced remote states.
+//   - An error if any reference is malformed.
 func (ws Workspace) getManualDependencies(workspaces map[string]*Workspace) ([]RemoteState, error) {
 	d := []RemoteState{}
 	manuals := map[string]Manual{
@@ -401,6 +471,11 @@ func (ws Workspace) getManualDependencies(workspaces map[string]*Workspace) ([]R
 
 }
 
+// getManualInputs scans the PreManual and PostManual fields of the Workspace for template references
+// in the form of {{workspace.output}}. It parses these references, validates their format, and attempts
+// to resolve them against the provided map of workspaces and their outputs. For each valid reference found,
+// it constructs an Input object containing metadata about the dependency. If a reference is malformed or
+// cannot be resolved, an error is returned. The function returns a slice of all successfully resolved Inputs.
 func (ws Workspace) getManualInputs(workspaces map[string]*Workspace) ([]Input, error) {
 	inputs := []Input{}
 
@@ -450,6 +525,10 @@ func (ws Workspace) getManualInputs(workspaces map[string]*Workspace) ([]Input, 
 	return inputs, nil
 }
 
+// getOutputs scans all files in the Workspace for output definitions using a regular expression,
+// extracts their names, and returns a slice of Output structs representing each found output.
+// Each Output includes its name, the file it was found in, and a reference to the Workspace.
+// Returns an error only if an unexpected issue occurs during processing (currently always returns nil).
 func (ws Workspace) getOutputs() ([]Output, error) {
 	o := []Output{}
 	refs := map[string]*regexp.Regexp{
@@ -477,6 +556,9 @@ func (ws Workspace) getOutputs() ([]Output, error) {
 	return o, nil
 }
 
+// getManual attempts to read the contents of the specified file within the workspace root
+// and returns it as a Manual type. If the file does not exist, it returns an empty Manual.
+// Returns an error if there is a problem reading the file.
 func (ws Workspace) getManual(filename string) (Manual, error) {
 	m := Manual("")
 	path := ws.Root + "/" + filename
@@ -490,6 +572,11 @@ func (ws Workspace) getManual(filename string) (Manual, error) {
 	return m, nil
 }
 
+// render replaces placeholders in the Manual string with the output of external commands.
+// For each Input in the inputs slice, if the Input's FullName is wrapped in double curly braces (e.g., "{{...}}"),
+// it executes the "terraform output <name>" command in the directory specified by the Input's ReferesTo.BelongsTo.Root.
+// The output of the command replaces the corresponding placeholder in the Manual string.
+// Returns the rendered string and an error if any command execution fails.
 func (m Manual) render(inputs []Input) (string, error) {
 	rendered := string(m)
 
